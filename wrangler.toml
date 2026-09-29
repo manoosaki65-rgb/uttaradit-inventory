@@ -1,0 +1,8 @@
+name = "uttaradit-inventory"
+main = "src/index.ts"
+compatibility_date = "2026-09-29"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "uttaradit-inventory-db"
+database_id = "REPLACE_AFTER_CREATE"
