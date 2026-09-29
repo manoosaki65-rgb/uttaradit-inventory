@@ -2,6 +2,14 @@ name = "uttaradit-inventory"
 main = "src/index.ts"
 compatibility_date = "2026-09-29"
 
+[build]
+command = "npm run build"
+
+[assets]
+directory = "./dist"
+not_found_handling = "single-page-application"
+run_worker_first = ["/api/*"]
+
 [[d1_databases]]
 binding = "DB"
 database_name = "uttaradit-inventory-db"
