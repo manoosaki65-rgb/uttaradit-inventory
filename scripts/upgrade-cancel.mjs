@@ -1,0 +1,10 @@
+import fs from 'node:fs';
+let s=fs.readFileSync('src/App.tsx','utf8');
+s=s.replace("const [deleteTarget, setDeleteTarget] = useState<Row | null>(null);","const [deleteTarget, setDeleteTarget] = useState<Row | null>(null);\n  const [cancelTarget, setCancelTarget] = useState<Row | null>(null);");
+s=s.replace(/^    if \(!window\.confirm.*\r?\n/m,'');
+s=s.replace('ยกเลิกรายการ ${row.inventory} แล้ว และเก็บไว้ใน Master','ยกเลิกรายการ ${row.inventory} แล้ว และเก็บไว้ในทะเบียน Local');
+s=s.replace('      setEdit(null);\r\n      setMsg(`ยกเลิกรายการ','      setEdit(null);\n      setCancelTarget(null);\n      setMsg(`ยกเลิกรายการ');
+s=s.replace("code==='popup_closed'?'ยกเลิกการเข้าสู่ระบบแล้ว':'เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่'","code==='popup_closed'?'ยกเลิกการเข้าสู่ระบบแล้ว':cause instanceof Error?cause.message:'เข้าสู่ระบบไม่สำเร็จ กรุณาลองใหม่'");
+s=s.replace('onClick={() => cancelReceived(edit)}','onClick={() => setCancelTarget(edit)}');
+s=s.replace('      {edit && (','      {cancelTarget && <div role="dialog" aria-modal="true" aria-label="ยืนยันยกเลิกรายการ" className="screen-only fixed inset-0 bg-black/50 z-[65] flex items-center justify-center p-4"><div className="bg-white rounded-2xl p-5 w-full max-w-md"><b>ยืนยันยกเลิกรายการ {cancelTarget.inventory}</b><p className="my-3">{cancelTarget.item} — รายการยังอยู่ในทะเบียนพร้อมหมายเหตุยกเลิก</p><div className="flex justify-end gap-2"><button onClick={()=>setCancelTarget(null)} className="border rounded-xl px-4 py-2">กลับไปแก้ไข</button><button onClick={()=>cancelReceived(cancelTarget)} className="bg-amber-600 text-white rounded-xl px-4 py-2">ยืนยันยกเลิก</button></div></div></div>}\n      {edit && (');
+fs.writeFileSync('src/App.tsx',s);

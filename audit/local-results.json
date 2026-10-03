@@ -1,0 +1,26 @@
+{
+  "passed": true,
+  "masterImported": false,
+  "appdeployRequests": 0,
+  "dailyRows": 47,
+  "total": 17034886,
+  "xlsxRows": 135,
+  "xlsxTotal": 5760380,
+  "pdfAmountFix": true,
+  "duplicateImportAdded": 0,
+  "persistsAfterReload": true,
+  "keyedRangeRows": 24,
+  "checks": [
+    "xls/xlsx/pdf/combined",
+    "invalid dates",
+    "mismatched dates",
+    "extra files",
+    "missing filename date",
+    "corrupt file",
+    "duplicate inventory",
+    "preserve edited fundYear",
+    "atomic validation",
+    "received/keyed ranges",
+    "column filters"
+  ]
+}

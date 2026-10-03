@@ -1,0 +1,66 @@
+# Tests
+
+## Test 1 - Master Inventory แสดงเป็นข้อมูลชุดเดียว [sanity]
+Viewport: desktop
+Covers: unified master list, GET /api/current, search, pagination, no split current/history tabs
+Description: ตรวจว่าหน้า Dashboard แสดงทะเบียน Inventory เป็น Master เดียว ไม่แยกงานปัจจุบันกับประวัติเดิม
+Steps:
+1. เปิด Dashboard
+2. ตรวจแถบด้านบน
+3. ค้นหาเลข Inventory จากข้อมูลเดิมและข้อมูลที่นำเข้าภายหลัง
+Expected: มีป้าย Master Inventory ชุดเดียว ค้นหาได้จากข้อมูลทั้งหมด และไม่มีแท็บ “งานปัจจุบัน” หรือ “ประวัติเดิม 3,857 รายการ”
+
+## Test 2 - นำเข้าไฟล์รายวันแล้วรวมเข้า Master เดียว
+Viewport: desktop
+Covers: Excel/PDF import, POST /api/current/import, unified total, duplicate guardrail
+Description: ตรวจว่าการนำเข้ารายวันเพิ่มหรือซ่อมข้อมูลในทะเบียนรวมโดยไม่สร้างชุดงานแยก
+Steps:
+1. เลือกไฟล์รายวัน Excel หรือ PDF ที่ถูกต้อง
+2. กด “อัปเดต Master”
+3. ค้นหาเลข Inventory ที่เพิ่งนำเข้า
+Expected: รายการใหม่อยู่ใน Master Inventory เดียว จำนวนรวมอัปเดต และนำเข้าซ้ำไม่สร้างเลข Inventory ซ้ำ
+
+## Test 3 - แก้ไขและยกเลิกจากเมนูแก้ไข
+Viewport: mobile
+Covers: edit modal, PUT /api/current/:id, cancel as note, mobile actions
+Description: ตรวจว่าหน้ารายการมีปุ่มแก้ไขเพียงปุ่มเดียว และยกเลิกอยู่ภายในหน้าต่างแก้ไข
+Steps:
+1. เปิดรายการหนึ่งบนมือถือ
+2. ตรวจว่าหน้ารายการมีปุ่ม “แก้ไข” โดยไม่มีปุ่มลบ/ยกเลิกแยกข้างนอก
+3. เปิด “แก้ไข” แล้วกด “ยกเลิกรายการ”
+4. ยืนยันและรีเฟรช
+Expected: รายการยังอยู่ใน Master และช่องหมายเหตุมีคำว่า “ยกเลิก”
+
+## Test 4 - จำกัดสิทธิ์ลบเฉพาะ manoosaki65@gmail.com
+Viewport: desktop
+Covers: Google sign-in, owner-only delete, DELETE /api/current/:id, archived deletion, admin allowlist
+Description: ตรวจว่าการลบอยู่ในเมนูแก้ไขและ backend ปฏิเสธบัญชีอื่น
+Steps:
+1. เปิด “แก้ไข” รายการทดสอบ
+2. เข้าสู่ระบบด้วยบัญชีที่ไม่ใช่ manoosaki65@gmail.com และลองลบ
+3. เข้าสู่ระบบด้วย manoosaki65@gmail.com แล้วลบรายการทดสอบและยืนยัน
+4. รีเฟรชและค้นหารายการเดิม
+Expected: บัญชีอื่นลบไม่ได้ บัญชี manoosaki65@gmail.com ลบได้ รายการหายจาก Master และมีการเก็บข้อมูลสำรอง
+
+## Test 5 - ตัวกรองแบบ Excel ค้นจาก Master ทั้งหมด
+Viewport: desktop
+Covers: per-column Excel filters, item filter, unit filter, Inventory number filter, keyed-date filter, received date filters, category filter, fund filter, fund-year filter, amount filter, note filter, purchasing-officer filter, GET /api/current full-master filtering
+Description: ตรวจว่าทุกคอลัมน์ข้อมูลในหัวตารางมีตัวกรองแบบ Excel และกรองจาก Master ทั้งหมด ไม่ใช่เฉพาะรายการที่เห็นอยู่
+Steps:
+1. กรอง “รายการที่ขอซื้อ” ด้วยคำบางคำ และกรอง “เลข Inventory” ด้วยเลขบางส่วน
+2. เลือก “หน่วยงาน” แล้วเลือกวัน เดือน ปีรับ
+3. เลือก “หมวด” “ประเภทเงิน” และ “ปีแหล่งเงิน”
+4. กรอง “วงเงิน” “หมายเหตุ” และ “เจ้าหน้าที่จัดซื้อ”
+5. ตรวจผลลัพธ์ทันที แล้วกด “ล้างตัวกรอง”
+Expected: ทุกหัวคอลัมน์ตั้งแต่ลำดับถึงเจ้าหน้าที่จัดซื้อมีตัวกรองที่ใช้งานได้ ผลลัพธ์ตรงทุกเงื่อนไขจาก Master ทั้งหมด และล้างตัวกรองแล้วกลับสู่รายการปกติ
+
+## Test 6 - พรีวิวและเลือกช่วงวันที่จาก Master เดียว
+Viewport: desktop
+Covers: preview print, date-range print, GET /api/print-range, unified master date filtering
+Description: ตรวจว่าการพิมพ์ย้อนหลังอ่านจาก Master Inventory ชุดเดียว
+Steps:
+1. กด “เลือกช่วงวันที่ / พิมพ์ย้อนหลัง”
+2. เลือกช่วงวันที่ที่มีข้อมูล
+3. กดพรีวิว
+Expected: พรีวิวมีเฉพาะข้อมูลในช่วงวันที่จาก Master เดียว และไม่เกิดรายการซ้ำจากข้อมูลเดิมกับข้อมูลรายวัน
+

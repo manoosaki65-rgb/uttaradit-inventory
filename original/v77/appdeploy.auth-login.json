@@ -1,0 +1,15 @@
+{
+  "methods": [
+    "google"
+  ],
+  "headline": "เข้าสู่ระบบสำหรับสิทธิ์ลบ Inventory",
+  "subtitle": "สิทธิ์ลบกำหนดเฉพาะบัญชีผู้ดูแล",
+  "style": {
+    "mode": "light",
+    "accentColor": "#1d4ed8",
+    "backgroundColor": "#eff6ff",
+    "panelColor": "#ffffff",
+    "textColor": "#172554",
+    "borderRadius": 12
+  }
+}

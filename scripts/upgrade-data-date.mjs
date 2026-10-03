@@ -1,0 +1,15 @@
+import fs from 'node:fs';
+let s=fs.readFileSync('src/App.tsx','utf8');
+const replace=(a,b)=>{if(!s.includes(a))throw new Error('Missing source: '+a.slice(0,80));s=s.replace(a,b);};
+replace("import { receivedDateFromFilename }", "import { receivedDateFromData }");
+const start=s.indexOf('    const sourceFile=excel??pdf!;');
+const end=s.indexOf('    importBusy.current=true;',start);
+s=s.slice(0,start)+s.slice(end);
+replace("const idx={seq:","const idx={received:col(['วันที่รับเรื่อง','วันที่รับเอกสาร','รับวันที่']),receivedMonth:col(['รับเดือน','เดือน']),receivedYear:col(['รับปี','ปี']),seq:");
+replace("day,month,year,category:legacyHosp", "...receivedDateFromData(legacyHosp?r[10]:idx.received>=0?(idx.receivedMonth>=0&&idx.receivedYear>=0?[clean(r[idx.received]),clean(r[idx.receivedMonth]),clean(r[idx.receivedYear])].join('/') : r[idx.received]):''),category:legacyHosp");
+replace("day,month,year,category:clean", "...receivedDateFromData(r[inventoryIndex+2]),category:clean");
+replace("day,month,year,category:text", "...receivedDateFromData(text(458,509)),category:text");
+replace("if(!parsed.length) throw new Error('no-rows');", "if(excelError||pdfError)throw new Error('อ่านไฟล์หรือวันที่รับเอกสารในข้อมูลไม่ครบ — ยังไม่ได้บันทึก');\n      if(!parsed.length) throw new Error('ไม่พบรายการ Inventory ที่อ่านได้');");
+replace("return p?{...p,...r", "if(p&&[r.day,r.month,r.year].join('/')!==[p.day,p.month,p.year].join('/'))throw new Error('วันที่รับเอกสารใน Excel และ PDF ไม่ตรงกัน');return p?{...p,...r");
+replace("' · วันที่ ' + day + '/' + month + '/25' + year", "' · ' + rangeLabel(parsed as Row[])");
+fs.writeFileSync('src/App.tsx',s);

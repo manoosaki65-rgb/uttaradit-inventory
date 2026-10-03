@@ -1,0 +1,138 @@
+{
+  "snapshot": "v77",
+  "noLiveApi": true,
+  "noMasterImported": true,
+  "results": [
+    {
+      "name": "Excel",
+      "count": 47,
+      "total": 17034886,
+      "firstInventory": "69-03777",
+      "lastInventory": "69-05274"
+    },
+    {
+      "name": "XLSX",
+      "count": 135,
+      "total": 5760380,
+      "firstInventory": "69-02505",
+      "lastInventory": "69-02044"
+    },
+    {
+      "name": "PDF",
+      "count": 47,
+      "total": 5796086,
+      "firstInventory": "69-03777",
+      "lastInventory": "69-05274"
+    },
+    {
+      "name": "Combined",
+      "count": 47,
+      "total": 17034886,
+      "firstInventory": "69-03777",
+      "lastInventory": "69-05274"
+    },
+    {
+      "name": "Amount differences between original Excel/PDF parsers",
+      "items": [
+        {
+          "inventory": "69-05044",
+          "excel": 1215000,
+          "pdf": 0
+        },
+        {
+          "inventory": "69-05150",
+          "excel": 1440000,
+          "pdf": 0
+        },
+        {
+          "inventory": "69-05151",
+          "excel": 1975000,
+          "pdf": 0
+        },
+        {
+          "inventory": "69-05153",
+          "excel": 1035000,
+          "pdf": 0
+        },
+        {
+          "inventory": "69-05155",
+          "excel": 2273800,
+          "pdf": 0
+        },
+        {
+          "inventory": "69-05158",
+          "excel": 3300000,
+          "pdf": 0
+        }
+      ]
+    },
+    {
+      "name": "Excel/PDF match",
+      "pdfOnly": [],
+      "excelOnly": []
+    },
+    {
+      "name": "Missing filename date",
+      "passed": true
+    },
+    {
+      "name": "Daily print blocks missing fundYear",
+      "passed": true
+    },
+    {
+      "name": "Daily print calls original preview/print when complete",
+      "passed": true
+    },
+    {
+      "name": "Range print allows missing fundYear (original inconsistency)",
+      "passed": true
+    },
+    {
+      "name": "Reversed print range rejected",
+      "passed": true
+    },
+    {
+      "name": "Original backend upsert and replace-day archive",
+      "passed": true,
+      "calls": [
+        [
+          "add",
+          "inventory_deleted_archive_v1",
+          1
+        ],
+        [
+          "delete",
+          "inventory_current_v2",
+          1
+        ],
+        [
+          "add",
+          "inventory_current_v2",
+          1
+        ],
+        [
+          "update",
+          "inventory_current_v2",
+          1
+        ]
+      ]
+    },
+    {
+      "name": "Original 200-row import limit",
+      "passed": true
+    },
+    {
+      "name": "Received range includes both endpoints",
+      "passed": true
+    },
+    {
+      "name": "Original keyed-date regex bug reproduced",
+      "returned": 0,
+      "expected": 2
+    },
+    {
+      "name": "Daily column filtering",
+      "passed": true
+    }
+  ]
+}

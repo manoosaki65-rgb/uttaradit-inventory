@@ -1,0 +1,62 @@
+[
+  {
+    "Hash": "BB263E9AA2F73A083AF5C2030507444EEC1A9EC394FEE101197A486A9B0478EC",
+    "Path": "C:\\Users\\ACER\\OneDrive\\Documents\\ChatGPT\\uttaradit-inventory\\original\\v77\\appdeploy.auth-login.json"
+  },
+  {
+    "Hash": "9E13D587ED6F553CD277197704863FB6BFC3B8E955E0266F06882C00CF9487F7",
+    "Path": "C:\\Users\\ACER\\OneDrive\\Documents\\ChatGPT\\uttaradit-inventory\\original\\v77\\index.html"
+  },
+  {
+    "Hash": "E44B3575A86A9A07EF844F21388924195B083555DF45AD9A15180812EED894B1",
+    "Path": "C:\\Users\\ACER\\OneDrive\\Documents\\ChatGPT\\uttaradit-inventory\\original\\v77\\package.json"
+  },
+  {
+    "Hash": "99DEBD91EE55BA39FA2378744A23239D71FBFCED132ED7EE36A5E845EB132605",
+    "Path": "C:\\Users\\ACER\\OneDrive\\Documents\\ChatGPT\\uttaradit-inventory\\original\\v77\\postcss.config.js"
+  },
+  {
+    "Hash": "CE8C44A21F3FAA3E994AFB53D6957C56C199F279A574542AB230E74807E9F5C9",
+    "Path": "C:\\Users\\ACER\\OneDrive\\Documents\\ChatGPT\\uttaradit-inventory\\original\\v77\\tailwind.config.js"
+  },
+  {
+    "Hash": "F5D341929559815AE7150906A428B07630513DDB5A5958D6C8444C71E485B2FE",
+    "Path": "C:\\Users\\ACER\\OneDrive\\Documents\\ChatGPT\\uttaradit-inventory\\original\\v77\\tsconfig.json"
+  },
+  {
+    "Hash": "608239A5F2C500D7A00E0787BCAD58FCFF9E9C622BF0E2CF71B7A2CB5455F3AC",
+    "Path": "C:\\Users\\ACER\\OneDrive\\Documents\\ChatGPT\\uttaradit-inventory\\original\\v77\\vite.config.ts"
+  },
+  {
+    "Hash": "902FDB085BD0EF149A7A869256F65E7E28AC72591DDF6C6611005D24E25CBEC1",
+    "Path": "C:\\Users\\ACER\\OneDrive\\Documents\\ChatGPT\\uttaradit-inventory\\original\\v77\\backend\\index.ts"
+  },
+  {
+    "Hash": "7473282381B6183DC10BD08F37A89D3DDD7E6352DDB8B9FEF77ABBD2B3210388",
+    "Path": "C:\\Users\\ACER\\OneDrive\\Documents\\ChatGPT\\uttaradit-inventory\\original\\v77\\backend\\master-data.ts"
+  },
+  {
+    "Hash": "6CA6DF211008FB28532BB1074D721A1AADE253E99B92D6F45059B1238EF4DC87",
+    "Path": "C:\\Users\\ACER\\OneDrive\\Documents\\ChatGPT\\uttaradit-inventory\\original\\v77\\backend\\realtime-subscribers.ts"
+  },
+  {
+    "Hash": "BDE80FEBE204DA826B8FC9C9830C03D749921683E516371425691267020F790A",
+    "Path": "C:\\Users\\ACER\\OneDrive\\Documents\\ChatGPT\\uttaradit-inventory\\original\\v77\\backend\\realtime.ts"
+  },
+  {
+    "Hash": "E8E43534A4F96B90EA594DD77898BA43C7BE683EACFEC6C036A74EC3034D9CF3",
+    "Path": "C:\\Users\\ACER\\OneDrive\\Documents\\ChatGPT\\uttaradit-inventory\\original\\v77\\src\\App.tsx"
+  },
+  {
+    "Hash": "8AA3631EAB301C13AE524EC1382C423A55B9B0B0E4520D79329C178D31F53C06",
+    "Path": "C:\\Users\\ACER\\OneDrive\\Documents\\ChatGPT\\uttaradit-inventory\\original\\v77\\src\\index.css"
+  },
+  {
+    "Hash": "F9A340DF66261A2E4B5956DB660D89D4C6B43D1DC39F22DCF1223B07F6EF2550",
+    "Path": "C:\\Users\\ACER\\OneDrive\\Documents\\ChatGPT\\uttaradit-inventory\\original\\v77\\src\\main.tsx"
+  },
+  {
+    "Hash": "B36A065B75A524A27BE05CFCDB8AE516E2F88F20D62481D769D0156317EC4DF5",
+    "Path": "C:\\Users\\ACER\\OneDrive\\Documents\\ChatGPT\\uttaradit-inventory\\original\\v77\\tests\\tests.txt"
+  }
+]

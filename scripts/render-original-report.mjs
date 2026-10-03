@@ -1,0 +1,22 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { build } from 'esbuild';
+import React from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
+
+const rows=JSON.parse(fs.readFileSync('audit/daily-rows.json','utf8'));
+let app=fs.readFileSync('original/v77/src/App.tsx','utf8');
+app=app.replace("from '@appdeploy/client'", "from '../src/inventory-client'");
+app=app.replace('useState<Row[]>([])',`useState<Row[]>(${JSON.stringify(rows)})`);
+fs.writeFileSync('audit/ReportApp.tsx',app);
+await build({entryPoints:['audit/ReportApp.tsx'],outfile:'audit/ReportApp.mjs',bundle:true,platform:'node',format:'esm',packages:'external',plugins:[{name:'pdf-worker-stub-for-ssr',setup(b){b.onResolve({filter:/pdf\.worker.*\?url$/},()=>({path:'pdf-worker',namespace:'audit'}));b.onLoad({filter:/.*/,namespace:'audit'},()=>({contents:'export default "";',loader:'js'}));}}]});
+const {default:App}=await import('../audit/ReportApp.mjs');
+const markup=renderToStaticMarkup(React.createElement(App));
+const cssName=fs.readdirSync('dist/assets').find(n=>n.endsWith('.css'));
+const css=fs.readFileSync(path.join('dist/assets',cssName),'utf8');
+const html=(print)=>`<!doctype html><html lang="th"><head><meta charset="utf-8"><title>ตรวจรายงานเดิม v77 — 47 รายการรายวัน (ไม่ใช่ Master)</title><style>${print?css.replaceAll('@media print','@media all'):css}</style></head><body><div id="root">${markup}</div></body></html>`;
+fs.writeFileSync('audit/report-screen.html',html(false));
+fs.writeFileSync('audit/report-print.html',html(true));
+const pages=[...markup.matchAll(/class="print-page"/g)].length;
+if(pages!==2)throw new Error('Expected 2 original report pages');
+console.log(JSON.stringify({pages,rows:rows.length,printColumns:13,landscape:true,marginMm:5,noMasterImported:true}));

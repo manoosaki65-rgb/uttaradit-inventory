@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "rows": 3,
+  "formats": [
+    "xls",
+    "xlsx",
+    "pdf",
+    "combined"
+  ],
+  "dateSource": "file contents; misleading/missing filename date ignored",
+  "all14Filters": true,
+  "search": true,
+  "duplicateImport": true,
+  "validation": true,
+  "edit": true,
+  "cancel": true,
+  "delete": "blocked: Local owner authentication unavailable",
+  "receivedRangeRows": 2,
+  "keyedRangeRows": 2,
+  "masterImported": false
+}
