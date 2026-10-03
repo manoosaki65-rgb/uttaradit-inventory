@@ -269,7 +269,7 @@ function App() {
           if(inventoryIndex>=0&&seqIndex>=0&&itemIndex>=0&&unitIndex>=0)candidate=recordRows.map((r,i)=>({seq:Number(clean(r[seqIndex]))||i+1,item:clean(r[itemIndex]),unit:clean(r[unitIndex]),inventory:normalizeInventory(r[inventoryIndex]),keyed:clean(r[inventoryIndex+1]),...receivedDateFromData(r[inventoryIndex+2]),category:clean(r[inventoryIndex+4]),fund:clean(r[inventoryIndex+6]),amount:Number(clean(r[inventoryIndex+9]).replace(/,/g,''))||0,note:clean(r[inventoryIndex+10]),officer:''}));
         }
         const usable=candidate.filter(row=>isInventory(row.inventory)&&Boolean(row.item));
-        if(usable.length<=1000&&usable.length>best.length)best=usable;
+        if(usable.length<=5000&&usable.length>best.length)best=usable;
       }
       if(!best.length)throw new Error('excel-no-inventory-table');
       return best.sort((a,b)=>a.seq-b.seq);
@@ -311,10 +311,10 @@ function App() {
       const r=await api.post('/api/current/import',{rows:parsed,source:sourceName});
       setRows((r.data.items as Row[]).map(normalizeRow)); setTotal(r.data.total); setPage(1); setPages(1); setPreviewMode(false);setPrintRange('');
       if(r.data.filterOptions)setFilterOptions(r.data.filterOptions);
-      setMsg('อัปเดตทะเบียน Local สำเร็จจาก ' + used + ' · อ่านได้ ' + parsed.length + ' รายการ · ' + (sequenceOk?'ลำดับ 1–'+parsed.length+' ครบ':'กรุณาตรวจลำดับรายการ') + ' · เพิ่มใหม่ ' + r.data.added + ' · ซ่อมข้อมูลเดิม ' + r.data.updated + ' · ' + rangeLabel(parsed as Row[]) + ' · รวมวันนั้น ' + r.data.total + ' รายการ · กรุณาเลือกปีแหล่งเงิน 68 / 69 / 70 ให้ครบก่อนพิมพ์' + (excelError&&used==='PDF'?' · Excel อ่านไม่ผ่าน จึงใช้ PDF แทน':'') + (pdfError&&used==='Excel'?' · PDF อ่านไม่ผ่าน จึงใช้ Excel':''));
+      setMsg('อัปเดตทะเบียน Cloudflare สำเร็จจาก ' + used + ' · อ่านได้ ' + parsed.length + ' รายการ · ' + (sequenceOk?'ลำดับ 1–'+parsed.length+' ครบ':'กรุณาตรวจลำดับรายการ') + ' · เพิ่มใหม่ ' + r.data.added + ' · ซ่อมข้อมูลเดิม ' + r.data.updated + ' · ' + rangeLabel(parsed as Row[]) + ' · รวมวันนั้น ' + r.data.total + ' รายการ · กรุณาเลือกปีแหล่งเงิน 68 / 69 / 70 ให้ครบก่อนพิมพ์' + (excelError&&used==='PDF'?' · Excel อ่านไม่ผ่าน จึงใช้ PDF แทน':'') + (pdfError&&used==='Excel'?' · PDF อ่านไม่ผ่าน จึงใช้ Excel':''));
     } catch (cause) {
       console.error('Inventory import failed',cause);
-      setMsg(cause instanceof Error?cause.message:'อ่านทั้ง Excel/PDF ไม่สำเร็จ — ยังไม่ได้เพิ่มข้อมูลใน Local');
+      setMsg(cause instanceof Error?cause.message:'อ่านทั้ง Excel/PDF ไม่สำเร็จ — ยังไม่ได้เพิ่มข้อมูล');
     } finally {importBusy.current=false;setImporting(false);}
   };
   return (
