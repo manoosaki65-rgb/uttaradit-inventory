@@ -26,6 +26,12 @@ export const onRequest:PagesFunction<Env>=async(c)=>{
   if(req.method==='POST'&&p==='/api/current/import'){
    const b:any=await req.json();const rows=Array.isArray(b.rows)?b.rows:[];if(!rows.length||rows.length>5000)return J({error:'นำเข้าได้ครั้งละ 1-5,000 รายการ'},400);
    const snap=await c.env.DB.prepare("SELECT * FROM inventory WHERE status='active'").all();await c.env.DB.prepare("INSERT INTO import_batches(source_name,row_count,backup_json) VALUES(?,?,?)").bind(String(b.source||''),rows.length,JSON.stringify(snap.results)).run();
+   if(rows.length>1000){
+     await c.env.DB.prepare("DELETE FROM inventory WHERE status='active'").run();
+     let added=0;
+     for(const r of rows){const inv=String(r.inventory||'').trim();if(!inv)continue;await c.env.DB.prepare("INSERT INTO inventory(seq,item,unit,inventory_no,keyed,received_day,received_month,received_year,category,fund,fund_year,amount,note,officer,source,status) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'active')").bind(r.seq||0,r.item||'',r.unit||'',inv,r.keyed||'',r.day||0,r.month||0,r.year||0,r.category||'',r.fund||'',r.fundYear||'',Number(r.amount||0),r.note||'',r.officer||'',String(b.source||'MASTER')).run();added++}
+     const all=await allRows(c.env);return J({...pack(all,all,new URLSearchParams()),ok:true,added,updated:0});
+   }
    let added=0,updated=0;for(const r of rows){const inv=String(r.inventory||'').trim();if(!inv)continue;const found:any=await c.env.DB.prepare("SELECT id FROM inventory WHERE inventory_no=? AND status='active' LIMIT 1").bind(inv).first();if(found){await c.env.DB.prepare("UPDATE inventory SET seq=?,item=?,unit=?,keyed=?,received_day=?,received_month=?,received_year=?,category=?,fund=?,fund_year=?,amount=?,note=?,officer=?,source=?,updated_at=CURRENT_TIMESTAMP WHERE id=?").bind(r.seq||0,r.item||'',r.unit||'',r.keyed||'',r.day||0,r.month||0,r.year||0,r.category||'',r.fund||'',r.fundYear||'',Number(r.amount||0),r.note||'',r.officer||'',String(b.source||''),found.id).run();updated++}else{await c.env.DB.prepare("INSERT INTO inventory(seq,item,unit,inventory_no,keyed,received_day,received_month,received_year,category,fund,fund_year,amount,note,officer,source,status) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,'active')").bind(r.seq||0,r.item||'',r.unit||'',inv,r.keyed||'',r.day||0,r.month||0,r.year||0,r.category||'',r.fund||'',r.fundYear||'',Number(r.amount||0),r.note||'',r.officer||'',String(b.source||'')).run();added++}}
    return J({ok:true,added,updated});
   }
