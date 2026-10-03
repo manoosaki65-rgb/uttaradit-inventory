@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, auth } from './inventory-client';
-import { Search, Upload, Pencil, Trash2, X, Save, Home } from 'lucide-react';
+import { Search, Upload, Pencil, Trash2, X, Save, Home, Plus } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf.mjs';
 import pdfWorker from 'pdfjs-dist/legacy/build/pdf.worker.min.mjs?url';
@@ -155,9 +155,14 @@ function App() {
   const missingFundYears = useMemo(() => filtered.filter(row=>!String(row.fundYear||'').trim()).length, [filtered]);
   const save = async () => {
     if (!edit) return;
-    try { await api.put('/api/current/' + encodeURIComponent(edit.id), edit);
-      setEdit(null); setMsg('บันทึกการแก้ไขใน Local แล้ว'); await load(page,q);
+    try { if(edit.id)await api.put('/api/current/' + encodeURIComponent(edit.id), edit);else await api.post('/api/current',edit);
+      setEdit(null); setMsg('บันทึกในทะเบียน Cloudflare แล้ว'); await load(page,q);
     } catch(cause) {setMsg(cause instanceof Error?cause.message:'บันทึกไม่สำเร็จ');}
+  };
+  const addReceived=()=>{
+    const now=new Date(),year=(now.getFullYear()+543)%100,day=now.getDate(),month=now.getMonth()+1;
+    const seq=rows.filter(r=>r.day===day&&r.month===month&&Number(r.year)%100===year).reduce((max,r)=>Math.max(max,r.seq),0)+1;
+    setEdit({id:'',seq,item:'',unit:'',inventory:'',keyed:'',day,month,year,category:'',fund:'',fundYear:'',amount:0,note:'',officer:''});
   };
   const saveFundYear=async(row:Row,value:string)=>{
     const previous=String(row.fundYear||'');
@@ -176,7 +181,7 @@ function App() {
       await api.put('/api/current/'+encodeURIComponent(row.id),{note});
       setEdit(null);
       setCancelTarget(null);
-      setMsg(`ยกเลิกรายการ ${row.inventory} แล้ว และเก็บไว้ในทะเบียน Local`);
+      setMsg(`ยกเลิกรายการ ${row.inventory} แล้ว และเก็บไว้ในทะเบียน Cloudflare`);
       await load(page,q);
     } catch { setMsg(`ยกเลิกรายการ ${row.inventory} ไม่สำเร็จ`); }
   };
@@ -209,7 +214,7 @@ function App() {
     try {
       await api.delete('/api/current/' + encodeURIComponent(deleteTarget.id));
       setDeleteTarget(null);
-      setMsg('ลบรายการออกจาก Master แล้ว และเก็บข้อมูลสำรองไว้แล้ว');
+      setMsg('ลบรายการออกจากทะเบียนแล้ว และเก็บข้อมูลสำรองไว้แล้ว');
       await load(page,q);
     } catch {
       setMsg('ลบไม่สำเร็จ หรือบัญชีนี้ไม่มีสิทธิ์ลบ ข้อมูลเดิมยังอยู่');
@@ -220,13 +225,14 @@ function App() {
   const clearFilters=()=>{setFilterSeq('');setFilterItem('');setFilterUnit('');setFilterInventory('');setFilterKeyed('');setFilterDay('');setFilterMonth('');setFilterYear('');setFilterCategory('');setFilterFund('');setFilterFundYear('');setFilterAmount('');setFilterNote('');setFilterOfficer('');};
   const hasColumnFilter=Boolean(filterSeq||filterItem||filterUnit||filterInventory||filterKeyed||filterDay||filterMonth||filterYear||filterCategory||filterFund||filterFundYear||filterAmount||filterNote||filterOfficer);
   const printSavedRows=()=>{if(!rows.length)return;const missing=rows.filter(row=>!String(row.fundYear||'').trim());if(missing.length){setMsg(`ยังพิมพ์ไม่ได้ กรุณาเลือกปีแหล่งเงินให้ครบอีก ${missing.length} รายการ`);return;}setPrintBasis('received');setPrintRange(rangeLabel(rows));setPreviewMode(true);};
-  const printDateRange=async()=>{if(!fromDate||!toDate||fromDate>toDate){setMsg('กรุณาเลือกช่วงวันที่ให้ถูกต้อง');return;}const basisLabel=dateBasis==='keyed'?'วันที่หน่วยงานคีย์':'รับวันที่';try{const params=new URLSearchParams({from:fromDate,to:toDate,basis:dateBasis});const r=await api.get('/api/print-range?'+params.toString());const items=(r.data.items as Row[]).map(normalizeRow);if(!items.length){setMsg(`ไม่พบรายการตาม${basisLabel}ในช่วงวันที่ที่เลือก`);return;}const missing=items.filter(row=>!String(row.fundYear||'').trim());if(missing.length){setMsg(`ยังพิมพ์ไม่ได้ กรุณาเลือกปีแหล่งเงินให้ครบอีก ${missing.length} รายการ`);return;}setRows(items);setTotal(items.length);setPage(1);setPages(1);setPrintBasis(dateBasis);setPrintRange(`ช่วงวันที่ : ${formatIsoDate(fromDate)} ถึง ${formatIsoDate(toDate)}`);setRangeOpen(false);setPreviewMode(true);setMsg(`เตรียมพิมพ์ ${items.length} รายการตาม${basisLabel}จากทะเบียน Local`);}catch(cause){setMsg(cause instanceof Error?cause.message:'โหลดข้อมูลช่วงวันที่สำหรับพิมพ์ไม่สำเร็จ');}};
+  const printDateRange=async()=>{if(!fromDate||!toDate||fromDate>toDate){setMsg('กรุณาเลือกช่วงวันที่ให้ถูกต้อง');return;}const basisLabel=dateBasis==='keyed'?'วันที่หน่วยงานคีย์':'รับวันที่';try{const params=new URLSearchParams({from:fromDate,to:toDate,basis:dateBasis});const r=await api.get('/api/print-range?'+params.toString());const items=(r.data.items as Row[]).map(normalizeRow);if(!items.length){setMsg(`ไม่พบรายการตาม${basisLabel}ในช่วงวันที่ที่เลือก`);return;}const missing=items.filter(row=>!String(row.fundYear||'').trim());if(missing.length){setMsg(`ยังพิมพ์ไม่ได้ กรุณาเลือกปีแหล่งเงินให้ครบอีก ${missing.length} รายการ`);return;}setRows(items);setTotal(items.length);setPage(1);setPages(1);setPrintBasis(dateBasis);setPrintRange(`ช่วงวันที่ : ${formatIsoDate(fromDate)} ถึง ${formatIsoDate(toDate)}`);setRangeOpen(false);setPreviewMode(true);setMsg(`เตรียมพิมพ์ ${items.length} รายการตาม${basisLabel}จากทะเบียน Cloudflare`);}catch(cause){setMsg(cause instanceof Error?cause.message:'โหลดข้อมูลช่วงวันที่สำหรับพิมพ์ไม่สำเร็จ');}};
   const importFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const fs = Array.from(e.target.files ?? []);
+    if(fs.some(f=>/master/i.test(f.name))){setMsg('พักขั้นตอนอัปเดต/เชื่อม Master ไว้ก่อน — กรุณาใช้รายงานประจำวันเท่านั้น');e.target.value='';return;}
     if (!fs.length) return;
     setSelectedFiles(fs);
     setPreviewMode(false);
-    setMsg('เลือกไฟล์แล้ว ' + fs.map(f => f.name).join(' + ') + ' — กด “อัปเดต Master” เพื่อรวมรายการของวันนั้นเข้าทะเบียนเดียว');
+    setMsg('เลือกไฟล์แล้ว ' + fs.map(f => f.name).join(' + ') + ' — กด “นำเข้ารายงานประจำวัน” เพื่อบันทึกรายการของวันนั้น');
   };
   const processTestFiles = async () => {
     if(importBusy.current)return;
@@ -335,6 +341,8 @@ function App() {
               </div>
             </div>
           </div>
+          <div className="flex flex-wrap gap-2">
+          <button onClick={addReceived} className="bg-white text-blue-800 px-4 py-2 rounded-xl font-semibold flex gap-2 items-center justify-center shadow"><Plus size={18}/>เพิ่มรายการ</button>
           <label className="bg-white text-blue-800 px-4 py-2 rounded-xl font-semibold cursor-pointer flex gap-2 items-center justify-center shadow">
             <Upload size={18} />
             นำเข้าข้อมูล
@@ -346,16 +354,17 @@ function App() {
               onChange={importFile}
             />
           </label>
+          </div>
         </div>
       </header>
       <main className="max-w-[1600px] mx-auto p-4">
         <div className="screen-only flex flex-wrap gap-3 mb-4">
-          {selectedFiles.length>0 && <button onClick={processTestFiles} disabled={importing} className="bg-emerald-600 text-white rounded-xl px-4 py-2 font-semibold disabled:opacity-40">{importing?'กำลังอ่านไฟล์...':'อัปเดต Master'}</button>}
+          {selectedFiles.length>0 && <button onClick={processTestFiles} disabled={importing} className="bg-emerald-600 text-white rounded-xl px-4 py-2 font-semibold disabled:opacity-40">{importing?'กำลังอ่านไฟล์...':'นำเข้ารายงานประจำวัน'}</button>}
           {missingFundYears>0&&<div className="bg-amber-50 border border-amber-300 text-amber-900 rounded-xl px-4 py-2 font-semibold">รอเลือกปีแหล่งเงิน {missingFundYears} รายการในหน้านี้</div>}
           <button onClick={printSavedRows} disabled={!rows.length} className="bg-white border border-blue-200 text-blue-800 rounded-xl px-4 py-2 font-semibold disabled:opacity-40">พรีวิว / พิมพ์รายงาน</button>
           <button onClick={() => setRangeOpen(true)} className="bg-white border border-blue-200 text-blue-800 rounded-xl px-4 py-2 font-semibold">เลือกช่วงวันที่ / พิมพ์ย้อนหลัง</button>
         </div>
-        {selectedFiles.length>0 && <div className="screen-only mb-3 bg-white border rounded-xl px-4 py-3"><div className="font-semibold">ไฟล์ที่เลือกสำหรับทดสอบ</div><div className="text-sm text-slate-600 mt-1">{selectedFiles.map(f=>f.name).join(' + ')}</div></div>}
+        {selectedFiles.length>0 && <div className="screen-only mb-3 bg-white border rounded-xl px-4 py-3"><div className="font-semibold">ไฟล์รายงานประจำวันที่เลือก</div><div className="text-sm text-slate-600 mt-1">{selectedFiles.map(f=>f.name).join(' + ')}</div></div>}
         {msg && <div className="screen-only mb-3 bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-xl">{msg}</div>}
         <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
           <div className="screen-only p-4 border-b space-y-2">
@@ -545,15 +554,15 @@ function App() {
         <div className="print-only signatures"><div className="signature"><div>ผู้ส่ง ............................................................</div><div>({sender})</div></div><div className="signature"><div>ผู้รับ ............................................................</div><div>({receiver})</div><div>{receiverRole}</div></div></div>
       </main>
       {previewMode && <div role="dialog" aria-modal="true" aria-label="พรีวิวรายงาน Inventory" className="screen-only fixed inset-0 bg-black/40 z-[70] flex flex-col p-3"><div className="bg-white p-3 flex items-center justify-between rounded-t-xl"><b>พรีวิวรายงาน Inventory</b><div className="flex gap-2"><button onClick={()=>previewFrameRef.current?.contentWindow?.print()} className="bg-blue-700 text-white rounded-lg px-4 py-2">พิมพ์รายงาน</button><button onClick={()=>{setPreviewMode(false);load(page,q);}} className="border rounded-lg px-4 py-2">ปิดพรีวิว</button></div></div><iframe title="หน้าพิมพ์ทะเบียนรับ Inventory" ref={previewFrameRef} srcDoc={previewDocument} className="flex-1 w-full bg-white border-0" /></div>}
-      {rangeOpen && <div className="screen-only fixed inset-0 bg-black/40 flex items-center justify-center p-3 z-50"><div className="bg-white rounded-2xl shadow-xl w-full max-w-lg"><div className="p-4 border-b flex justify-between"><b>เลือกช่วงวันที่จากทะเบียนทั้งหมด</b><button onClick={()=>setRangeOpen(false)}><X/></button></div><div className="p-4 grid sm:grid-cols-2 gap-3"><div className="sm:col-span-2"><div className="text-sm font-semibold text-slate-700">เลือกวันที่จากช่อง</div><div className="mt-2 grid grid-cols-2 gap-2"><button type="button" onClick={()=>setDateBasis('keyed')} className={`rounded-xl border px-3 py-3 text-left ${dateBasis==='keyed'?'border-blue-700 bg-blue-50 text-blue-800 ring-2 ring-blue-100':'border-slate-200'}`}><span className="block font-semibold">วันที่หน่วยงานคีย์</span><span className="block text-xs mt-1 opacity-75">เช่น วันที่ 8–9 ก.ย.</span></button><button type="button" onClick={()=>setDateBasis('received')} className={`rounded-xl border px-3 py-3 text-left ${dateBasis==='received'?'border-blue-700 bg-blue-50 text-blue-800 ring-2 ring-blue-100':'border-slate-200'}`}><span className="block font-semibold">รับวันที่</span><span className="block text-xs mt-1 opacity-75">วันที่ลงรับเอกสาร</span></button></div></div><label className="block"><span className="text-xs text-slate-500">วันที่เริ่มต้น</span><input type="date" value={fromDate} onChange={e=>setFromDate(e.currentTarget.value)} className="mt-1 w-full border rounded-xl px-3 py-2"/></label><label className="block"><span className="text-xs text-slate-500">วันที่สิ้นสุด</span><input type="date" value={toDate} onChange={e=>setToDate(e.currentTarget.value)} className="mt-1 w-full border rounded-xl px-3 py-2"/></label></div><div className="p-4 border-t flex justify-end gap-2"><button onClick={()=>setRangeOpen(false)} className="border rounded-xl px-4 py-2">ยกเลิก</button><button onClick={printDateRange} className="bg-blue-700 text-white rounded-xl px-5 py-2">พรีวิว / พิมพ์ช่วงวันที่</button></div></div></div>}
+      {rangeOpen && <div className="screen-only fixed inset-0 bg-black/40 flex items-center justify-center p-3 z-50"><div className="bg-white rounded-2xl shadow-xl w-full max-w-lg"><div className="p-4 border-b flex justify-between"><b>เลือกช่วงวันที่จากทะเบียนทั้งหมด</b><button onClick={()=>setRangeOpen(false)}><X/></button></div><div className="p-4 grid sm:grid-cols-2 gap-3"><div className="sm:col-span-2"><div className="text-sm font-semibold text-slate-700">เลือกวันที่จากช่อง</div><div className="mt-2 grid grid-cols-2 gap-2"><button type="button" onClick={()=>setDateBasis('keyed')} className={`rounded-xl border px-3 py-3 text-left ${dateBasis==='keyed'?'border-blue-700 bg-blue-50 text-blue-800 ring-2 ring-blue-100':'border-slate-200'}`}><span className="block font-semibold">วันที่หน่วยงานคีย์</span><span className="block text-xs mt-1 opacity-75">เช่น วันที่ 8–9 ก.ย.</span></button><button type="button" onClick={()=>setDateBasis('received')} className={`rounded-xl border px-3 py-3 text-left ${dateBasis==='received'?'border-blue-700 bg-blue-50 text-blue-800 ring-2 ring-blue-100':'border-slate-200'}`}><span className="block font-semibold">รับวันที่</span><span className="block text-xs mt-1 opacity-75">วันที่ลงรับเอกสาร</span></button></div></div><label className="block"><span className="text-xs text-slate-500">วันที่เริ่มต้น</span><input type="date" value={fromDate} onInput={e=>setFromDate(e.currentTarget.value)} onChange={e=>setFromDate(e.currentTarget.value)} className="mt-1 w-full border rounded-xl px-3 py-2"/></label><label className="block"><span className="text-xs text-slate-500">วันที่สิ้นสุด</span><input type="date" value={toDate} onInput={e=>setToDate(e.currentTarget.value)} onChange={e=>setToDate(e.currentTarget.value)} className="mt-1 w-full border rounded-xl px-3 py-2"/></label></div><div className="p-4 border-t flex justify-end gap-2"><button onClick={()=>setRangeOpen(false)} className="border rounded-xl px-4 py-2">ยกเลิก</button><button onClick={printDateRange} className="bg-blue-700 text-white rounded-xl px-5 py-2">พรีวิว / พิมพ์ช่วงวันที่</button></div></div></div>}
       {signEdit && <div className="screen-only fixed inset-0 bg-black/40 flex items-center justify-center p-3 z-50"><div className="bg-white rounded-2xl shadow-xl w-full max-w-lg"><div className="p-4 border-b flex justify-between"><b>เปลี่ยนชื่อผู้ส่ง / ผู้รับก่อนพิมพ์</b><button onClick={()=>setSignEdit(false)}><X/></button></div><div className="p-4 space-y-3"><label className="block"><span className="text-xs text-slate-500">ผู้ส่ง</span><input value={sender} onChange={e=>setSender(e.target.value)} className="mt-1 w-full border rounded-xl px-3 py-2"/></label><label className="block"><span className="text-xs text-slate-500">ผู้รับ</span><input value={receiver} onChange={e=>setReceiver(e.target.value)} className="mt-1 w-full border rounded-xl px-3 py-2"/></label><label className="block"><span className="text-xs text-slate-500">ตำแหน่งผู้รับ</span><input value={receiverRole} onChange={e=>setReceiverRole(e.target.value)} className="mt-1 w-full border rounded-xl px-3 py-2"/></label></div><div className="p-4 border-t flex justify-end"><button onClick={()=>setSignEdit(false)} className="bg-blue-700 text-white rounded-xl px-5 py-2">ใช้ชื่อนี้</button></div></div></div>}
-      {deleteTarget && <div className="screen-only fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4"><div className="bg-white rounded-2xl p-5 w-full max-w-md shadow-xl"><h2 className="font-bold text-xl text-red-800">ยืนยันลบรายการ Inventory</h2><p className="mt-3 font-semibold">{deleteTarget.inventory} — {deleteTarget.item}</p><p className="mt-2 text-sm text-slate-600">รายการจะถูกนำออกจาก Master Inventory และเก็บข้อมูลสำรองไว้ การลบต้องใช้บัญชี manoosaki65@gmail.com</p><div className="mt-5 flex justify-end gap-2"><button disabled={deleting} onClick={()=>setDeleteTarget(null)} className="border rounded-xl px-4 py-2">ยกเลิก</button><button disabled={deleting} onClick={removeReceived} className="bg-red-700 text-white rounded-xl px-4 py-2 disabled:opacity-50">{deleting?'กำลังลบ...':'ยืนยันลบ'}</button></div></div></div>}
+      {deleteTarget && <div className="screen-only fixed inset-0 bg-black/50 z-[60] flex items-center justify-center p-4"><div className="bg-white rounded-2xl p-5 w-full max-w-md shadow-xl"><h2 className="font-bold text-xl text-red-800">ยืนยันลบรายการ Inventory</h2><p className="mt-3 font-semibold">{deleteTarget.inventory} — {deleteTarget.item}</p><p className="mt-2 text-sm text-slate-600">รายการจะถูกนำออกจากทะเบียน Inventory และเก็บข้อมูลสำรองไว้ การลบต้องใช้บัญชี manoosaki65@gmail.com</p><div className="mt-5 flex justify-end gap-2"><button disabled={deleting} onClick={()=>setDeleteTarget(null)} className="border rounded-xl px-4 py-2">ยกเลิก</button><button disabled={deleting} onClick={removeReceived} className="bg-red-700 text-white rounded-xl px-4 py-2 disabled:opacity-50">{deleting?'กำลังลบ...':'ยืนยันลบ'}</button></div></div></div>}
       {cancelTarget && <div role="dialog" aria-modal="true" aria-label="ยืนยันยกเลิกรายการ" className="screen-only fixed inset-0 bg-black/50 z-[65] flex items-center justify-center p-4"><div className="bg-white rounded-2xl p-5 w-full max-w-md"><b>ยืนยันยกเลิกรายการ {cancelTarget.inventory}</b><p className="my-3">{cancelTarget.item} — รายการยังอยู่ในทะเบียนพร้อมหมายเหตุยกเลิก</p><div className="flex justify-end gap-2"><button onClick={()=>setCancelTarget(null)} className="border rounded-xl px-4 py-2">กลับไปแก้ไข</button><button onClick={()=>cancelReceived(cancelTarget)} className="bg-amber-600 text-white rounded-xl px-4 py-2">ยืนยันยกเลิก</button></div></div></div>}
       {edit && (
         <div className="fixed inset-0 bg-black/40 flex items-center justify-center p-3 z-50">
           <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[92vh] overflow-auto">
             <div className="p-4 border-b flex justify-between">
-              <b>แก้ไข {edit.inventory}</b>
+              <b>{edit.id?'แก้ไข '+edit.inventory:'เพิ่มรายการ Inventory'}</b>
               <button onClick={() => setEdit(null)}>
                 <X />
               </button>
@@ -578,6 +587,7 @@ function App() {
                 ] as [keyof Row, string][]
               ).map(([k, label]) => (
                 <label
+                  key={k}
                   className={
                     k === 'item' || k === 'note' ? 'md:col-span-2' : ''
                   }
@@ -601,14 +611,14 @@ function App() {
               ))}
             </div>
             <div className="p-4 border-t flex flex-wrap justify-between gap-2">
-              <div className="flex flex-wrap gap-2">
+              {edit.id&&<div className="flex flex-wrap gap-2">
                 <button onClick={() => setCancelTarget(edit)} className="border border-amber-300 bg-amber-50 text-amber-900 rounded-xl px-4 py-2">ยกเลิกรายการ</button>
                 {ownerEmail===OWNER_EMAIL ? (
                   <button onClick={() => requestDelete(edit)} className="border border-red-300 bg-red-50 text-red-700 rounded-xl px-4 py-2 flex items-center gap-2"><Trash2 size={17}/>ลบรายการ</button>
                 ) : (
                   <button disabled={authBusy} onClick={() => requestDelete(edit)} className="border rounded-xl px-4 py-2 text-slate-700 disabled:opacity-50">{authBusy?'กำลังเข้าสู่ระบบ...':'เข้าสู่ระบบ Gmail เพื่อใช้สิทธิ์ลบ'}</button>
                 )}
-              </div>
+              </div>}
               <button onClick={save} className="bg-blue-700 text-white rounded-xl px-5 py-2 flex gap-2"><Save size={18} />บันทึก</button>
             </div>
           </div>

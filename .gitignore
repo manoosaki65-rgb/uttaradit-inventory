@@ -4,3 +4,5 @@ dist/
 .env.*
 audit/ReportApp.tsx
 audit/ReportApp.mjs
+audit/private-d1/
+audit/private-master-work/

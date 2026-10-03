@@ -1,0 +1,24 @@
+{
+  "passed": true,
+  "fixtureRows": 3,
+  "masterUsed": false,
+  "productionWrites": false,
+  "add": true,
+  "edit": true,
+  "cancel": true,
+  "ownerOnlyDelete": true,
+  "archiveRollback": true,
+  "search": true,
+  "filters": 14,
+  "dailyImport": [
+    "xls",
+    "xlsx",
+    "pdf",
+    "combined"
+  ],
+  "dateFromContents": true,
+  "repeatImport": true,
+  "dailyPreview": true,
+  "historicalPreview": true,
+  "originalPrintUnchanged": true
+}
