@@ -103,7 +103,6 @@ function App() {
   const tableScrollRef=useRef<HTMLDivElement | null>(null);
   const topScrollRef=useRef<HTMLDivElement | null>(null);
   const syncingScroll=useRef(false);
-  const initialLatestScrollDone=useRef(false);
   const syncHorizontal=(source:'top'|'table')=>{if(syncingScroll.current)return;const from=source==='top'?topScrollRef.current:tableScrollRef.current;const to=source==='top'?tableScrollRef.current:topScrollRef.current;if(!from||!to)return;syncingScroll.current=true;to.scrollLeft=from.scrollLeft;window.requestAnimationFrame(()=>{syncingScroll.current=false;});};
   const thaiMonths=['','มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
   const formatRowDate=(r:Pick<Row,'day'|'month'|'year'>)=>`${r.day} ${thaiMonths[r.month]||r.month} ${r.year<100?2500+r.year:r.year}`;
@@ -141,14 +140,7 @@ function App() {
     load();
     auth.getUser().then(user => setOwnerEmail(String(user?.email ?? '').toLowerCase())).catch(() => setOwnerEmail(''));
   }, []);
-  useEffect(()=>{
-    if(!rows.length||initialLatestScrollDone.current)return;
-    initialLatestScrollDone.current=true;
-    window.requestAnimationFrame(()=>{
-      const el=tableScrollRef.current;
-      if(el)el.scrollTop=el.scrollHeight;
-    });
-  },[rows]);
+  const displayRows = useMemo(() => [...rows].sort((a,b)=>(b.year-a.year)||(b.month-a.month)||(b.day-a.day)||(b.seq-a.seq)||(Number(b.id)-Number(a.id))), [rows]);
   const filtered = useMemo(() => [...rows].sort((a,b)=>(a.year-b.year)||(a.month-b.month)||(a.day-b.day)||(a.seq-b.seq)), [rows]);
   const formatAmount=(value:number)=>Number(value||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});
   const printTotal = useMemo(() => filtered.reduce((sum,row)=>sum+(Number(row.amount)||0),0), [filtered]);
@@ -442,7 +434,7 @@ function App() {
                 </tr>
               </thead>
               <tbody>
-                {filtered.map(r => (
+                {displayRows.map(r => (
                   <tr
                     key={r.id}
                     className={
@@ -522,7 +514,7 @@ function App() {
             ))}
           </div>
           <div className="mobile-cards screen-only lg:hidden divide-y">
-            {filtered.map(r => (
+            {displayRows.map(r => (
               <article key={r.id} className={r.note.includes('ยกเลิก') ? 'bg-red-50 p-4' : 'bg-white p-4'}>
                 <div className="flex items-center justify-between gap-3">
                   <span className="text-xs font-semibold text-slate-500">ลำดับ {r.seq}</span>

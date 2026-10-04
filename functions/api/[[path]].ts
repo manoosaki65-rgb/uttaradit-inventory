@@ -8,11 +8,11 @@ const keyedKey=(r:any)=>{const s=String(r.keyed||'');let m=s.match(/^(\d{4})-(\d
 function filter(all:any[],q:URLSearchParams){
  const text=(q.get('q')||'').trim().toLowerCase(), eq=(k:string,v:any)=>!q.get(k)||String(v??'').trim()===q.get(k), inc=(k:string,v:any)=>!q.get(k)||String(v??'').toLowerCase().includes((q.get(k)||'').toLowerCase());
  let a=all.filter(r=>(!text||Object.values(r).join(' ').toLowerCase().includes(text))&&inc('seq',r.seq)&&inc('item',r.item)&&eq('unit',r.unit)&&inc('inventory',r.inventory)&&inc('keyed',r.keyed)&&eq('day',r.day)&&eq('month',r.month)&&(!q.get('year')||String(Number(r.year)%100)===q.get('year'))&&eq('category',r.category)&&eq('fund',r.fund)&&eq('fundYear',r.fundYear)&&(!q.get('amount')||String(r.amount).includes((q.get('amount')||'').replace(/,/g,'')))&&inc('note',r.note)&&eq('officer',r.officer));
- a.sort((x,y)=>dateKey(x)-dateKey(y)||x.seq-y.seq); return a;
+ a.sort((x,y)=>dateKey(y)-dateKey(x)||y.seq-x.seq||Number(y.id)-Number(x.id)); return a;
 }
 function pack(all:any[],items:any[],q:URLSearchParams){
  const u=(k:string)=>[...new Set(all.map((r:any)=>String(r[k]||'').trim()).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'th'));
- const pageSize=Math.min(5000,Math.max(1,Number(q.get('pageSize')||5000))),pages=Math.max(1,Math.ceil(items.length/pageSize)),page=Math.min(Math.max(1,Number(q.get('page')||pages)),pages);
+ const pageSize=Math.min(5000,Math.max(1,Number(q.get('pageSize')||5000))),pages=Math.max(1,Math.ceil(items.length/pageSize)),page=Math.min(Math.max(1,Number(q.get('page')||1)),pages);
  return {items:items.slice((page-1)*pageSize,page*pageSize),total:items.length,page,pages,masterTotal:all.length,source:'Master Inventory เดียว',filterOptions:{years:[...new Set(all.map((r:any)=>String(Number(r.year)%100)))].sort(),months:[...new Set(all.map((r:any)=>Number(r.month)))].filter(Boolean).sort((a,b)=>a-b),units:u('unit'),categories:u('category'),funds:u('fund'),fundYears:u('fundYear'),officers:u('officer')}};
 }
 async function allRows(env:Env){const x=await env.DB.prepare("SELECT * FROM inventory WHERE status='active' ORDER BY received_year,received_month,received_day,seq,id").all();return (x.results||[]).map(row)}

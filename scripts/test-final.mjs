@@ -18,14 +18,14 @@ async function parse(files){let response,message,posts=0;const context={selected
 const daily=[file('small-misleading-690101.xls'),file('small-no-date.xlsx'),file('small-misleading-690102.pdf')];
 assert.equal((await parse([daily[0]])).response.data.added,3);
 for(const input of [[daily[1]],[daily[2]],[daily[0],daily[2]]]){assert.equal((await parse(input)).response.data.added,0);assert.equal((await api.get('/api/current')).data.total,3)}
-let rows=(await api.get('/api/current')).data.items;assert.deepEqual(rows.map(r=>r.day),[10,10,11]);assert(rows.every(r=>r.month===9&&r.year===69));assert.equal(rows.reduce((n,r)=>n+r.amount,0),7500);
+let rows=(await api.get('/api/current')).data.items.sort((a,b)=>a.year-b.year||a.month-b.month||a.day-b.day||a.seq-b.seq);assert.deepEqual(rows.map(r=>r.day),[10,10,11]);assert(rows.every(r=>r.month===9&&r.year===69));assert.equal(rows.reduce((n,r)=>n+r.amount,0),7500);
 for(const name of ['small-missing-date.xlsx','small-invalid-date.xlsx'])assert.equal((await parse([file(name)])).posts,0);
 const fresh={...rows[0],seq:4,inventory:'69-99998',item:'New small test'};
 assert.equal((await api.post('/api/current',fresh)).status,201);assert.equal((await api.post('/api/current',fresh)).status,409);
 assert.equal((await api.put('/api/current/'+rows[0].id,{day:31,month:2})).status,400);assert.equal((await api.put('/api/current/99999',{note:'no'})).status,404);
 await api.put('/api/current/'+rows[0].id,{fundYear:'69',officer:'Officer A',note:'Edited',amount:1500});
 await api.put('/api/current/'+rows[1].id,{fundYear:'70',officer:'Officer B'});await api.put('/api/current/'+rows[2].id,{fundYear:'68',officer:'Officer C'});
-rows=(await api.get('/api/current')).data.items;const r=rows[0];
+rows=(await api.get('/api/current')).data.items.sort((a,b)=>a.year-b.year||a.month-b.month||a.day-b.day||a.seq-b.seq);const r=rows[0];
 for(const [key,value] of Object.entries({seq:r.seq,item:r.item,unit:r.unit,inventory:r.inventory,keyed:r.keyed,day:r.day,month:r.month,year:r.year,category:r.category,fund:r.fund,fundYear:r.fundYear,amount:'1,500',note:r.note,officer:r.officer}))assert((await api.get('/api/current?'+new URLSearchParams({[key]:String(value)}))).data.items.some(x=>x.id===r.id),key);
 assert.equal((await api.get('/api/current?q=Edited')).data.total,1);
 assert.equal((await api.get('/api/current?pageSize=2&page=1')).data.items.length,2);
