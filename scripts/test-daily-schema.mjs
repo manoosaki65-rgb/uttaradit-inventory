@@ -1,0 +1,24 @@
+import assert from 'node:assert/strict';
+import {createRuntime} from './final-test-runtime.mjs';
+const {sqlite,call,load}=createRuntime();
+const row={seq:1,item:'Fixture A',unit:'Unit A',inventory:'69-00001',keyed:'2026-09-01',day:1,month:9,year:69,category:'A',fund:'A',fundYear:'69',amount:100,note:'Preserve',officer:'Owner'};
+const request=async(method,path,body)=>{const r=await call(method,path,body);return {status:r.status,data:await r.json()}};
+assert.equal((await request('POST','/api/current',row)).status,201);
+sqlite.exec("INSERT INTO inventory(seq,item,unit,inventory_no,keyed,received_day,received_month,received_year,amount) VALUES(2,'Fixture B','Unit B','69-00001','2026-09-02',2,9,69,200)");
+const send=rows=>request('POST','/api/current/import',{source:'daily.xlsx',rows});
+assert.equal((await send([{...row,amount:125,note:'',fundYear:'',officer:''}])).status,200);
+const all=(await request('GET','/api/current')).data.items;
+assert.equal(all.length,2);assert.equal(all.find(r=>r.item==='Fixture B').amount,200);
+assert.equal(all.find(r=>r.item==='Fixture A').note,'Preserve');
+assert.equal((await send([{...row,item:'Ambiguous',unit:'Unknown'}])).status,409);
+assert.equal(sqlite.prepare('SELECT count(*) n FROM import_batches').get().n,1);
+const fresh={...row,inventory:'69-00002',seq:3};
+assert.equal((await send([fresh])).data.added,1);
+assert.equal((await send([fresh])).data.added,0);
+sqlite.exec("CREATE TRIGGER block_import BEFORE UPDATE ON inventory BEGIN SELECT RAISE(ABORT,'rollback fixture'); END");
+const before=sqlite.prepare('SELECT count(*) n FROM import_batches').get().n;
+assert.equal((await send([fresh])).status,500);
+assert.equal(sqlite.prepare('SELECT count(*) n FROM import_batches').get().n,before);
+const retired=load('functions/api/master-sync.ts');assert.equal((await retired.onRequest()).status,410);
+console.log('PASS: live schema without UNIQUE index, duplicate Master row preserved, ambiguous import rejected, repeat import, metadata preserved, transaction rollback, Master sync retired; no production writes.');
+

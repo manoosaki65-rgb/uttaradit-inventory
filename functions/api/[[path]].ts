@@ -29,6 +29,7 @@ export const onRequest:PagesFunction<Env>=async(c)=>{
   }
   if(req.method==='POST'&&p==='/api/current'){
    let r;try{r=validateRecord(await req.json())}catch(e:any){return J({error:e.message},400)}
+   if(await c.env.DB.prepare("SELECT id FROM inventory WHERE inventory_no=? AND status='active' LIMIT 1").bind(r.inventory).first())return J({error:'เลข Inventory นี้มีอยู่แล้ว กรุณาแก้ไขรายการเดิม'},409);
    const keys=Object.keys(columns);
    const result=await c.env.DB.prepare(`INSERT INTO inventory(${keys.map(k=>columns[k]).join(',')},source,status) VALUES(${keys.map(()=>'?').join(',')},'manual','active')`).bind(...keys.map(k=>r[k])).run();
    return J({ok:true,id:String(result.meta.last_row_id)},201);
@@ -44,19 +45,32 @@ export const onRequest:PagesFunction<Env>=async(c)=>{
    if(!input.length)return J({error:'ไม่พบรายการรายงานประจำวัน'},400);
    let records;try{records=input.map((r:any)=>validateRecord(r))}catch(e:any){return J({error:e.message},400)}
    if(new Set(records.map((r:any)=>r.inventory)).size!==records.length)return J({error:'รายงานมีเลข Inventory ซ้ำ กรุณาตรวจสอบก่อนบันทึก'},409);
-   const snap=await c.env.DB.prepare("SELECT * FROM inventory WHERE status='active'").all(),existing=new Set((snap.results||[]).map((r:any)=>r.inventory_no));
-   const keys=Object.keys(columns);
-   const select=keys.map(k=>"json_extract(value,'$."+k+"')").join(',');
-   const update=keys.filter(k=>k!=='inventory').map(k=>['fundYear','note','officer'].includes(k)?columns[k]+"=CASE WHEN excluded."+columns[k]+"='' THEN inventory."+columns[k]+" ELSE excluded."+columns[k]+" END":columns[k]+'=excluded.'+columns[k]).join(',');
-   const sql='INSERT INTO inventory('+keys.map(k=>columns[k]).join(',')+",source,status) SELECT "+select+",?,'active' FROM json_each(?) WHERE true ON CONFLICT(inventory_no) WHERE inventory_no<>'' DO UPDATE SET "+update+',source=excluded.source,updated_at=CURRENT_TIMESTAMP';
-   await c.env.DB.batch([c.env.DB.prepare('INSERT INTO import_batches(source_name,row_count,backup_json) VALUES(?,?,?)').bind(String(b.source||''),records.length,JSON.stringify(snap.results||[])),c.env.DB.prepare(sql).bind(String(b.source||''),JSON.stringify(records))]);
-   const all=await allRows(c.env),updated=records.filter((r:any)=>existing.has(r.inventory)).length;
+   const snap=await c.env.DB.prepare("SELECT * FROM inventory WHERE status='active'").all();
+   const keys=Object.keys(columns), statements=[c.env.DB.prepare('INSERT INTO import_batches(source_name,row_count,backup_json) VALUES(?,?,?)').bind(String(b.source||''),records.length,JSON.stringify(snap.results||[]))];
+   let updated=0;
+   for(const r of records){
+    const candidates=(snap.results||[]).filter((old:any)=>old.inventory_no===r.inventory);
+    // Repeated numbers in Master are separate rows: never overwrite all matches.
+    const exact=candidates.filter((old:any)=>['item','unit','keyed','day','month','year'].every(k=>String(row(old)[k as keyof ReturnType<typeof row>])===String(r[k])));
+    const old:any=exact.length===1?exact[0]:candidates.length===1?candidates[0]:null;
+    if(candidates.length&&!old)return J({error:'เลข Inventory '+r.inventory+' มีหลายรายการใน Master กรุณาเลือกแก้ไขรายการที่ถูกต้องก่อนนำเข้า'},409);
+    if(old){
+     const fields=keys.filter(k=>k!=='inventory');
+     const values=fields.map(k=>['fundYear','note','officer'].includes(k)&&r[k]===''?row(old)[k as keyof ReturnType<typeof row>]:r[k]);
+     statements.push(c.env.DB.prepare('UPDATE inventory SET '+fields.map(k=>columns[k]+'=?').join(',')+",source=?,updated_at=CURRENT_TIMESTAMP WHERE id=? AND status='active'").bind(...values,String(b.source||''),old.id));
+     updated++;
+    }else statements.push(c.env.DB.prepare('INSERT INTO inventory('+keys.map(k=>columns[k]).join(',')+",source,status) VALUES("+keys.map(()=>'?').join(',')+",?,'active')").bind(...keys.map(k=>r[k]),String(b.source||'')));
+   }
+   await c.env.DB.batch(statements);
+   const all=await allRows(c.env);
    return J({...pack(all,all,new URLSearchParams()),ok:true,added:records.length-updated,updated});
   }
+
   const m=p.match(/^\/api\/(?:admin\/)?current\/(\d+)$/);
   if(m&&req.method==='PUT'){
    const old:any=await c.env.DB.prepare("SELECT * FROM inventory WHERE id=? AND status='active'").bind(+m[1]).first();if(!old)return J({error:'ไม่พบรายการ'},404);
    const patch:any=await req.json();let r;try{r=validateRecord(patch,row(old))}catch(e:any){return J({error:e.message},400)}
+   if(r.inventory!==old.inventory_no&&await c.env.DB.prepare("SELECT id FROM inventory WHERE inventory_no=? AND status='active' AND id<>? LIMIT 1").bind(r.inventory,old.id).first())return J({error:'เลข Inventory นี้มีอยู่แล้ว กรุณาแก้ไขรายการเดิม'},409);
    const keys=Object.keys(columns).filter(k=>k in patch);if(keys.length)await c.env.DB.prepare('UPDATE inventory SET '+keys.map(k=>columns[k]+'=?').join(',')+',updated_at=CURRENT_TIMESTAMP WHERE id=?').bind(...keys.map(k=>r[k]),+m[1]).run();return J({ok:true});
   }
   if(m&&req.method==='DELETE'){
